@@ -1,6 +1,6 @@
 <?php
 
-require "EU4Reader.php";
+require "EU4Parser.php";
 
 set_time_limit(60);
 
