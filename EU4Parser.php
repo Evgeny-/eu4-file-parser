@@ -59,8 +59,10 @@ class EU4Parser {
          if(strpos($string, static::START_BLOCK) !== false) {
             $blockStart = $from + $i + 1;
             $skipUntil = $this->getBlockEnd($blockStart) + 1;
+            $value = $this->parse($blockStart, $skipUntil - 1);
 
-            $res[$this->getName($string)] = $this->parse($blockStart, $skipUntil - 1);
+            $res[$this->getName($string)] = $value;
+            //$this->addArrayValue($res, $this->getName($string), $value);
          }
          else {
             $string = trim($string);
