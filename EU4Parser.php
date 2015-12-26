@@ -1,11 +1,20 @@
 <?php
 
-class EU4Reader {
+class EU4Parser {
    protected $result;
+
+   const START_BLOCK = "={";
+   const END_BLOCK = "}";
+   const PREG_VAR = "/([a-z0-9\_]+)\=(.*)/im";
+   const PREG_STRING = "/^\"(.*)\"$/im";
 
    public function __construct($filename) {
       $this->file = file($filename);
       $this->result = $this->parse();
+   }
+
+   public function getResult() {
+      return $this->result;
    }
 
    protected function getName ($string) {
@@ -14,8 +23,7 @@ class EU4Reader {
       return trim($string[0]);
    }
 
-   protected function getNextEnd ($from=0) {
-
+   protected function getBlockEnd ($from=0) {
       for($i = $from; $i < count($this->file); $i++) {
          $string = $this->file[$i];
 
@@ -36,49 +44,46 @@ class EU4Reader {
    }
 
    protected function parse ($from=0, $to=null) {
-      if(!$to) $to = count($this->file);
-      $length = $to - $from;
-      $skipTo = 0;
+      if($to === null) {
+         $to = count($this->file);
+      }
 
       $res = [];
+      $skipUntil = 0;
 
-      for($i = 0; $i < $length; $i++) {
+      for($i = 0; $i < $to - $from; $i++) {
          $string = $this->file[$i + $from];
 
-         if($i < $skipTo) continue;
+         if($i < $skipUntil) continue;
 
-         if(strpos($string, '={') !== false) {
-            $fr = $from + $i + 1;
-            $skipTo = $this->getNextEnd($fr) + 1;
+         if(strpos($string, static::START_BLOCK) !== false) {
+            $blockStart = $from + $i + 1;
+            $skipUntil = $this->getBlockEnd($blockStart) + 1;
 
-            $res[$this->getName($string)] = $this->parse($fr, $skipTo - 1);
+            $res[$this->getName($string)] = $this->parse($blockStart, $skipUntil - 1);
          }
          else {
             $string = trim($string);
 
-            if($string === '}') continue;
+            if(!$string || $string === static::END_BLOCK) continue;
 
-            if(preg_match("/([a-z0-9\_]+)\=(.*)/im", $string, $matches)) {
-               if(preg_match("/^\"(.*)\"$/im", $string, $matches2)) {
+            if(preg_match(static::PREG_VAR, $string, $matches)) {
+               if(preg_match(static::PREG_STRING, $string, $matches2)) {
                   $this->addArrayValue($res, $matches[1], $matches2[1]);
                }
                else {
                   $this->addArrayValue($res, $matches[1], $matches[2]);
                }
             }
-            elseif(preg_match("/^\"(.*)\"$/im", $string, $matches)) {
+            elseif(preg_match(static::PREG_STRING, $string, $matches)) {
                $res[] = $matches[1];
             }
-            elseif($string) {
+            else {
                $res[] = $string;
             }
          }
       }
 
       return $res;
-   }
-
-   public function getResult() {
-      return $this->result;
    }
 }

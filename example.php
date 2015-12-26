@@ -6,7 +6,7 @@ set_time_limit(60);
 
 $time = time();
 
-$eu4 = new EU4Reader('file.eu4');
+$eu4 = new EU4Parser('file.eu4');
 
 $res = $eu4->getResult();
 
